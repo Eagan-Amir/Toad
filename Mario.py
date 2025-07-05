@@ -11,6 +11,10 @@ SCALE = 2
 BASE_WIDTH = screen_width // SCALE
 BASE_HEIGHT = screen_height // SCALE
 
+SPRITE_WIDTH = 34
+SPRITE_HEIGHT = 26
+ANIMATION_SPEED = 150
+
 game_surface = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
 screen = pygame.display.set_mode((screen_width, screen_height))
 
@@ -20,14 +24,38 @@ pygame.display.set_caption("Toad")
 clock = pygame.time.Clock()
 screen.fill((50,50,50))
 
+def load_frames(sheet_path, frame_count):
+    sheet = pygame.image.load(sheet_path).convert_alpha()
+
+    frames = []
+    for i in range (frame_count):
+        x = i * (SPRITE_WIDTH + 1.5)
+        frame = sheet.subsurface(pygame.Rect(x, 0, SPRITE_WIDTH, SPRITE_HEIGHT))
+        frames.append(frames)
+
+    return frames
+
+test = load_frames("toadstand.png", 1)
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
 
-        self.canbreak = False ######
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.image.fill ((255, 0, 0))
+        self.grounded_timer = 0
+
+        self.idle_frames = load_frames("toadstand.png", 1)
+        self.walk_frames = load_frames("toadsheet.png", 2)
+        self.jump_frames = load_frames("Toadjump.png", 1)
+
+        self.current_frame_list = self.idle_frames
+        self.frame_index = 0
+
+        self.image = self.current_frame_list[self.frame_index]
         self.rect = self.image.get_rect(topleft=(x, y))
+
+        self.animation_timer = 0
+        self.facing_left = False
+
         self.pos = pygame.math.Vector2(x, y)
         self.velocity = pygame.math.Vector2(0,0)
         self.onground = False
@@ -35,8 +63,16 @@ class Player(pygame.sprite.Sprite):
     def update(self, collision_objects):
         keys = pygame.key.get_pressed()
        
+        dt = clock.get_time()
+
         self.velocity.x = (keys[pygame.K_d] - keys[pygame.K_a]) * 2.5
        
+       
+        if self.velocity.x < 0:
+            self.facing_left = True
+        elif self.velocity.x > 0:
+            self.facing_left = False
+
         self.velocity.y += GRAVITY
         if self.velocity.y > 10:
             self.velocity.y = 10
@@ -59,7 +95,34 @@ class Player(pygame.sprite.Sprite):
         self.onground=False
         self.check_collision(collision_objects,'vertical')
     
+        if self.grounded_timer == 0:
+            if self.current_frame_list != self.jump_frames:
+                print("[jup]")
+            self.current_frame_list = self.jump_frames
+
+        elif self.velocity.x != 0:
+            if self.current_frame_list != self.walk_frames:
+                print("[wup]")
+            self.current_frame_list = self.walk_frames
+        else:
+            self.grounded_timer = max(0, self.grounded_timer - dt)
+            self.current_frame_list = self.idle_frames
+
+        if len(self.current_frame_list) > 1:
+            self.animation_timer += clock.get_time()
+            if self.animation_timer >= ANIMATION_SPEED:
+                self.animation_timer = 0
+                self.frame_index = (self.frame_index + 1) % len (self.current_frame_list)
+        else:
+            self.frame_index = 0
+
+        self.image = self.current_frame_list[self.frame_index]
+        if self.facing_left:
+            self.image = pygame.transform.flip(self.image, True, False)
+
     def check_collision(self, collision_objects, direction):
+        grounded = False
+
         for obj in collision_objects:
             if self.rect.colliderect(obj):
                 print(f"[lup] {obj} {direction}")
@@ -73,11 +136,22 @@ class Player(pygame.sprite.Sprite):
                 elif direction == 'vertical':
                     if self.velocity.y > 0:
                         self.rect.bottom = obj.top
-                        self.onground = True
+                        self.velocity.y = 0
+                        self.pos.y = self.rect.y
+                        grounded = True
+
+                        if grounded and not self.onground:
+                            self.grounded_timer = 100
+
                     elif self.velocity.y < 0:
                         self.rect.top = obj.bottom
                     self.pos.y = self.rect.y
                     self.velocity.y = 0
+
+        if direction == "vertical":
+            if grounded and not self.onground:
+                self.grounded_timer = 100
+            self.onground = grounded
 
     def trybreakblocks(self, game):
         if self.velocity.y < 0:
@@ -207,7 +281,7 @@ class Camera:
         return rect.move(-self.camera.x, -self.camera.y)
         
     def update(self, target):
-        x = target.rect.centerx + BASE_WIDTH  // 2
+        x = target.rect.centerx - BASE_WIDTH  // 2
         x = max(0, min(x, self.width - BASE_WIDTH))
        
         y = 0
