@@ -1,8 +1,8 @@
 import pygame
 import pytmx
 
-screen_width = 640
-screen_height = 320
+screen_width = 720
+screen_height = 480
 fps = 60
 GRAVITY = 0.5
 JUMP = -9
@@ -207,7 +207,7 @@ class Camera:
         return rect.move(-self.camera.x, -self.camera.y)
         
     def update(self, target):
-        x = -target.rect.centerx + BASE_WIDTH  // 2
+        x = target.rect.centerx + BASE_WIDTH  // 2
         x = max(0, min(x, self.width - BASE_WIDTH))
        
         y = 0
@@ -231,9 +231,9 @@ def main():
         player.trybreakblocks(game)
         camera.update(player)
         game.update_breakable_tile_animations()
-
-        screen.fill((50,50,50))
-        game.render(screen, camera.camera)
+        game_surface.fill((50, 50, 50))
+        game.render(game_surface, camera.camera)
+        game_surface.blit(player.image, camera.apply(player.rect))
         scaled_surface = pygame.transform.scale(game_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.flip()
