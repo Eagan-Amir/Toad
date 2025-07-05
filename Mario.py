@@ -7,6 +7,12 @@ fps = 60
 GRAVITY = 0.5
 JUMP = -9
 TILE_SIZE = 16
+SCALE = 2
+BASE_WIDTH = screen_width // SCALE
+BASE_HEIGHT = screen_height // SCALE
+
+game_surface = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+screen = pygame.display.set_mode((screen_width, screen_height))
 
 pygame.init()
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -75,7 +81,7 @@ class Player(pygame.sprite.Sprite):
 
     def trybreakblocks(self, game):
         if self.velocity.y < 0:
-            hitbox = pygame.Rect(self.rect.x, self.rect.y - 4, self.rect.width, 4)
+            hitbox = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width, 10)
 
             for tile in game.breakabletiles:
                 if hitbox.colliderect(tile["rect"]) and not tile["is_animating"]:
@@ -197,15 +203,16 @@ class Camera:
         self.width = width
         self.height = height
 
-    def apply(self, entity):
-        return entity.rect.move(-self.camera.x, -self.camera.y)
+    def apply(self, rect):
+        return rect.move(-self.camera.x, -self.camera.y)
         
     def update(self, target):
-        x = -target.rect.centerx + screen_width // 2
-        y = -target.rect.centery + screen_height // 2
-        x = min(0, max(-(self.width - screen_width), x))
-        y = min(0, max(-(self.height - screen_height), y))
-        self.camera = pygame.Rect(x, y, self.width, self.height)
+        x = -target.rect.centerx + BASE_WIDTH  // 2
+        x = max(0, min(x, self.width - BASE_WIDTH))
+       
+        y = 0
+
+        self.camera.topleft = (x, y)
 
 def main():
     game = Game("TOC2.tmx")
@@ -227,7 +234,8 @@ def main():
 
         screen.fill((50,50,50))
         game.render(screen, camera.camera)
-        screen.blit(player.image, (player.rect.x - camera.camera.x, player.rect.y - camera.camera.y))
+        scaled_surface = pygame.transform.scale(game_surface, screen.get_size())
+        screen.blit(scaled_surface, (0, 0))
         pygame.display.flip()
         clock.tick(fps)
         
