@@ -31,7 +31,7 @@ def load_frames(sheet_path, frame_count):
     for i in range (frame_count):
         x = i * (SPRITE_WIDTH + 1.5)
         frame = sheet.subsurface(pygame.Rect(x, 0, SPRITE_WIDTH, SPRITE_HEIGHT))
-        frames.append(frames)
+        frames.append(frame)
 
     return frames
 
@@ -162,7 +162,22 @@ class Player(pygame.sprite.Sprite):
                     print(f"pup ({tile['tile_x']}, {tile['tile_y']})")
                     tile ["is_animating"] = True
                     tile["animation_timer"] = 0
-                    break
+                    
+                    found_spawn = False
+
+                    for spawn in game.reward_spawn_points:
+                        spawn_rect = pygame.Rect(spawn["x"], spawn["y"], TILE_SIZE, TILE_SIZE)
+                        if spawn_rect.colliderect(tile["rect"]):
+                            reward = RewardSprite(spawn["x"], spawn["y"])
+                            game.spawned_rewards.add(reward)
+                            found_spawn = True
+                            break
+
+                    if not found_spawn:
+                        reward_x = tile["rect"].centerx - 8
+                        reward_y = tile["rect"].y - 16
+                        reward = RewardSprite(reward_x, reward_y)
+                        game.spawned_rewards.add(reward)
 
 class Game:
     def __init__(self, map_file):
@@ -172,11 +187,17 @@ class Game:
         self.collision_objects = []
         self.breakabletiles = []
 
+        self.rewards = []
+        self.spawned_rewards = pygame.sprite.Group()
+
         self.loadbreakabletiles()
         self.load_collision_objects()
 
+        self.load_reward_object()
+        self.load_reward_spawn_points()
+
     def load_collision_objects(self):
-        print(f"[bup]")
+        print("[bup]")
         self.collision_objects = []
         for obj in self.tmxdata.get_layer_by_name("Collision"):
             x = obj.x
@@ -268,8 +289,33 @@ class Game:
                     # Apply offset directly to rect.y here
                     tile["rect"].y = tile["start_y"] + tile["offset_y"]
 
+    def load_reward_object(self):
+        reward_layer = self.tmxdata.get_layer_by_name("Rewards")
 
+        for obj in reward_layer:
+            rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+            self.rewards.append({
+                "rect": rect,
+                "is_animating": False,
+                "animation_timer": 0,
+                "start_y": rect.y,
+                "offset_y": 0,
+                "spawned": False
+            })
                 
+    def load_reward_spawn_points(self):
+        self.reward_spawn_points = []
+
+        try:
+            layer = self.tmxdata.get_layer_by_name("reward_spawn")
+            for obj in layer:
+                self.reward_spawn_points.append({
+                    "x": obj.x,
+                    "y": obj.y,
+                    "type": obj.type
+                })
+        except:
+            print("[tup]")
 
 class Camera:
     def __init__(self, width, height):
@@ -287,6 +333,31 @@ class Camera:
         y = 0
 
         self.camera.topleft = (x, y)
+
+class RewardSprite(pygame.sprite.Sprite):
+    def __Innit__(self, x, y):
+        super().__init__()
+        self.image = pygame.surface((16,16), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 6)
+        self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
+
+        self.start_y = self.rect.y
+        self.phase = 0
+        self.timer = 0
+        self.float_height = 20
+        self.pause_duration = 10
+
+    def update(self):
+        if self.phase == 0:
+            self.rect.y -= 2
+            if self.start_y - self.rect.y >= self.float_height:
+                self.phase = 1
+                self.timer = 0
+
+        elif self.phase == 1:
+            self.timer += 1
+            if self.timer >= self.pause_duration:
+                self.kill()
 
 def main():
     game = Game("TOC2.tmx")
@@ -308,6 +379,9 @@ def main():
         game_surface.fill((50, 50, 50))
         game.render(game_surface, camera.camera)
         game_surface.blit(player.image, camera.apply(player.rect))
+        game.spawned_rewards.update()
+        for reward in game.spawned_rewards:
+            game_surface.blit(reward.image, camera.apply(reward.rect))
         scaled_surface = pygame.transform.scale(game_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.flip()
