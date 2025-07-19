@@ -335,8 +335,9 @@ class Camera:
         self.camera.topleft = (x, y)
 
 class RewardSprite(pygame.sprite.Sprite):
-    def __Innit__(self, x, y):
+    def __init__(self, x, y):
         super().__init__()
+
         self.image = pygame.surface((16,16), pygame.SRCALPHA)
         pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 6)
         self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
@@ -393,20 +394,19 @@ if __name__ == "__main__":
     main()
 
 
-    
+
+
+
 # Traceback (most recent call last):
-#   File "c:\Users\Eagan\Python\Mario.py", line 391, in <module>
+#   File "c:\Users\Eagan\Python\Mario.py", line 394, in <module>
 #     main()
 #     ~~~~^^
-#   File "c:\Users\Eagan\Python\Mario.py", line 376, in main
+#   File "c:\Users\Eagan\Python\Mario.py", line 377, in main
 #     player.trybreakblocks(game)
 #     ~~~~~~~~~~~~~~~~~~~~~^^^^^^
 #   File "c:\Users\Eagan\Python\Mario.py", line 171, in trybreakblocks
 #     reward = RewardSprite(spawn["x"], spawn["y"])
-#   File "C:\Users\Eagan\AppData\Local\Programs\Python\Python313\Lib\site-packages\pygame\sprite.py", line 117, in __init__
-#     self.add(*groups)
-#     ~~~~~~~~^^^^^^^^^
-#   File "C:\Users\Eagan\AppData\Local\Programs\Python\Python313\Lib\site-packages\pygame\sprite.py", line 135, in add
-#     self.add(*group)
-#     ~~~~~~~~^^^^^^^^
-# TypeError: pygame.sprite.Sprite.add() argument after * must be an iterable, not float
+#   File "c:\Users\Eagan\Python\Mario.py", line 341, in __init__
+#     self.image = pygame.surface((16,16), pygame.SRCALPHA)
+#                  ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+# TypeError: 'module' object is not callable
