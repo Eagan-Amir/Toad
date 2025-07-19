@@ -376,12 +376,14 @@ def main():
         player.trybreakblocks(game)
         camera.update(player)
         game.update_breakable_tile_animations()
+
         game_surface.fill((50, 50, 50))
         game.render(game_surface, camera.camera)
         game_surface.blit(player.image, camera.apply(player.rect))
         game.spawned_rewards.update()
         for reward in game.spawned_rewards:
             game_surface.blit(reward.image, camera.apply(reward.rect))
+
         scaled_surface = pygame.transform.scale(game_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.flip()
@@ -389,3 +391,22 @@ def main():
         
 if __name__ == "__main__":
     main()
+
+
+    
+# Traceback (most recent call last):
+#   File "c:\Users\Eagan\Python\Mario.py", line 391, in <module>
+#     main()
+#     ~~~~^^
+#   File "c:\Users\Eagan\Python\Mario.py", line 376, in main
+#     player.trybreakblocks(game)
+#     ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+#   File "c:\Users\Eagan\Python\Mario.py", line 171, in trybreakblocks
+#     reward = RewardSprite(spawn["x"], spawn["y"])
+#   File "C:\Users\Eagan\AppData\Local\Programs\Python\Python313\Lib\site-packages\pygame\sprite.py", line 117, in __init__
+#     self.add(*groups)
+#     ~~~~~~~~^^^^^^^^^
+#   File "C:\Users\Eagan\AppData\Local\Programs\Python\Python313\Lib\site-packages\pygame\sprite.py", line 135, in add
+#     self.add(*group)
+#     ~~~~~~~~^^^^^^^^
+# TypeError: pygame.sprite.Sprite.add() argument after * must be an iterable, not float
