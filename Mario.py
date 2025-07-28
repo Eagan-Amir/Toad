@@ -20,9 +20,28 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 
 pygame.init()
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Toad")
+pygame.display.set_caption("ST2DO")
 clock = pygame.time.Clock()
 screen.fill((50,50,50))
+
+def load_coin_frames(sheet_path, frame_width=11, frame_height=16, scale_to=TILE_SIZE):
+    sheet = pygame.image.load(sheet_path).convert_alpha()
+    frames = []
+    sheet_height= sheet.get_height()
+
+    frame_count = 2
+    for i in range(frame_count):
+        y = i * frame_height
+        frame_rect = pygame.Rect(0, y, frame_width, frame_height)
+
+        if y + frame_height > sheet_height:
+            continue
+
+        frame = sheet.subsurface(frame_rect)
+        scaled = pygame.transform.scale(frame, (scale_to, scale_to))
+        frames.append(scaled)
+
+        return frames
 
 def load_frames(sheet_path, frame_count):
     sheet = pygame.image.load(sheet_path).convert_alpha()
@@ -158,7 +177,7 @@ class Player(pygame.sprite.Sprite):
             hitbox = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width, 10)
 
             for tile in game.breakabletiles:
-                if hitbox.colliderect(tile["rect"]) and not tile["is_animating"]:
+                if hitbox.colliderect(tile["rect"]) and not tile["is_animating"] and not tile["has_spawned"]:
                     print(f"pup ({tile['tile_x']}, {tile['tile_y']})")
                     tile ["is_animating"] = True
                     tile["animation_timer"] = 0
@@ -179,6 +198,10 @@ class Player(pygame.sprite.Sprite):
                         reward = RewardSprite(reward_x, reward_y)
                         game.spawned_rewards.add(reward)
 
+                    tile["has_spawned"] = True
+                    game.score += 1
+
+
 class Game:
     def __init__(self, map_file):
         self.tmxdata = pytmx.load_pygame(map_file, pixelalpha=True)
@@ -195,6 +218,9 @@ class Game:
 
         self.load_reward_object()
         self.load_reward_spawn_points()
+
+        self.score = 0
+        self.font = pygame.font.SysFont("Arial", 25)
 
     def load_collision_objects(self):
         print("[bup]")
@@ -269,7 +295,8 @@ class Game:
                     "is_animating": False,
                     "offset_y": 0,
                     "start_y": rect.y,
-                    "animation_timer": 0
+                    "animation_timer": 0,
+                    "has_spawned": False
                 })
                 self.collision_objects.append(rect)
 
@@ -338,9 +365,14 @@ class RewardSprite(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
 
-        self.image = pygame.surface((16,16), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 6)
-        self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
+        # self.image = pygame.Surface((16,16), pygame.SRCALPHA)
+        # pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 6)
+        # self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
+
+        self.frames = load_coin_frames("coin_spritesheet.png", 11, 16, TILE_SIZE)
+        self.frame_index = 0
+        self.animation_speed = 150
+        self.last_update = pygame.time.get_ticks()
 
         self.start_y = self.rect.y
         self.phase = 0
@@ -349,6 +381,13 @@ class RewardSprite(pygame.sprite.Sprite):
         self.pause_duration = 10
 
     def update(self):
+        now = pygame.time.get_ticks()
+
+        if now - self.last_update > self.animation_speed:
+            self.last_update = now
+            self.frame_index = (self.frame_index + 1)% len(self.frames)
+            self.image = self.frames[self.frame_index]
+
         if self.phase == 0:
             self.rect.y -= 2
             if self.start_y - self.rect.y >= self.float_height:
@@ -380,6 +419,10 @@ def main():
 
         game_surface.fill((50, 50, 50))
         game.render(game_surface, camera.camera)
+
+        score_text = game.font.render(f"score: {game.score}", True, (255, 255, 255))
+        game_surface.blit(score_text, (4, 4))
+
         game_surface.blit(player.image, camera.apply(player.rect))
         game.spawned_rewards.update()
         for reward in game.spawned_rewards:
@@ -393,20 +436,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-
-
-
-# Traceback (most recent call last):
-#   File "c:\Users\Eagan\Python\Mario.py", line 394, in <module>
-#     main()
-#     ~~~~^^
-#   File "c:\Users\Eagan\Python\Mario.py", line 377, in main
-#     player.trybreakblocks(game)
-#     ~~~~~~~~~~~~~~~~~~~~~^^^^^^
-#   File "c:\Users\Eagan\Python\Mario.py", line 171, in trybreakblocks
-#     reward = RewardSprite(spawn["x"], spawn["y"])
-#   File "c:\Users\Eagan\Python\Mario.py", line 341, in __init__
-#     self.image = pygame.surface((16,16), pygame.SRCALPHA)
-#                  ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
-# TypeError: 'module' object is not callable
