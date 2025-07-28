@@ -367,12 +367,13 @@ class RewardSprite(pygame.sprite.Sprite):
 
         # self.image = pygame.Surface((16,16), pygame.SRCALPHA)
         # pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 6)
-        # self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
 
         self.frames = load_coin_frames("coin_spritesheet.png", 11, 16, TILE_SIZE)
         self.frame_index = 0
         self.animation_speed = 150
         self.last_update = pygame.time.get_ticks()
+        self.image = self.frames[self.frame_index]
+        self.rect = self.image.get_rect(center= (x + TILE_SIZE // 2, y))
 
         self.start_y = self.rect.y
         self.phase = 0
